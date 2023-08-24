@@ -1,7 +1,7 @@
 [package]
 name = "chip_infinite"
 authors = ["UsrBinLuna"]
-description = "🦀 A very bad CHIP-8 emulator by crustaceans, for crustaceans."
+description = "🦀 A CHIP-8 emulator by crustaceans, for crustaceans."
 license = "MIT"
 version = "1.0.0"
 edition = "2021"
