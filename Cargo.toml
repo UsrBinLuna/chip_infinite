@@ -1,0 +1,12 @@
+[package]
+name = "chip_infinite"
+authors = ["UsrBinLuna"]
+description = "🦀 A very bad CHIP-8 emulator by crustaceans, for crustaceans."
+license = "MIT"
+version = "1.0.0"
+edition = "2021"
+keywords = ["emulators"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
