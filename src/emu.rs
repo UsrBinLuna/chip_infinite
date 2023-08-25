@@ -1,30 +1,34 @@
-use std::io::Write;
+use std::string;
+use colored::Colorize;
 
-use definitions::cpu;
-use font;
+use crate::definitions::Cpu;
+
+mod definitions;
+mod font;
 
 
 // Implement a new constructor for our Cpu struct - PC is 0x200. We use &mut self to 
 // access and modify all values under self
 impl Cpu {
 
-    pub fn new() -> Self {
+    pub fn new(&mut self) -> Self {
 
         // Initialize all variables
-        let mut new_emu = Self {
-            pc: START_ADDR,
-            ram: [0; RAM], // sets all RAM values to 0
-            screen: [false; DISP_COLS * DISP_ROWS],
-            v: [0; REGS], // creates REGS number of [V0-VF] and sets them to 0
-            i: 0,
-            stack: [0; STACK_SIZE],
-            keypad: [false; NUM_KEYS],
+        let mut new_emu: Cpu = Self {
+            pc: definitions::START_ADDR,
+            ram: [0; definitions::RAM], // sets all RAM values to 0
+            display: [false; definitions::DISP_COLS * definitions::DISP_ROWS],
+            v_reg: [0; definitions::REGS], // creates REGS number of [V0-VF] and sets them to 0
+            i_reg: 0,
+            stack: [0; definitions::STACK_SIZE],
+            keypad: [false; definitions::NUM_KEYS],
             dt: 0,
-            st: 0
+            st: 0,
+            sp: 0
         };
 
         // Load fonts to memory, FONTSET_SIZE being the addresses.
-        new_emu.ram[..FONTSET_SIZE].copy_from_slice(&FONTSET);
+        new_emu.ram[..font::FONTSET_SIZE].copy_from_slice(&font::FONTSET);
 
         // Initialize the emulator and return
         new_emu
@@ -37,29 +41,30 @@ impl Cpu {
         self.sp += 1; // increase stack pointer by one, so next object is one "level" higher.
     }
 
-    fn pop(&mut self) -> Option<u16> {
+    fn pop(&mut self) -> u16 {
         if self.sp > 0 { // underflow protection
             self.sp -= 1; // decrease stack pointer by one, so next object is one "level" lower.
-            Some(self.stack[self.sp as usize]) // reads value but is left alone for next push to override. no semicolon = `return <var>`
+            self.stack[self.sp as usize] // reads value but is left alone for next push to override. no semicolon = `return <var>`
         } else {
-            println!("ERR: Underflow Panic! Did not pop at {} due to SP = 0.", self.sp);
-            None // return nothing and don't do anything, as there is no slot lower than 0.
+            underflow_panic(self.sp);
+            1
+            // return nothing and don't do anything, as there is no slot lower than 0.
         }
     }
 
     // RESET function - resets all values to their default, and reloads fonts to memory.
     pub fn reset(&mut self) {
-        self.pc = START_ADDR;
-        self.ram = [0; RAM_SIZE];
-        self.screen = [false; SCREEN_WIDTH * SCREEN_HEIGHT];
-        self.v_reg = [0; NUM_REGS];
+        self.pc = definitions::START_ADDR;
+        self.ram = [0; definitions::RAM];
+        self.display = [false; definitions::DISP_COLS * definitions::DISP_ROWS];
+        self.v_reg = [0; definitions::REGS];
         self.i_reg = 0;
         self.sp = 0;
-        self.stack = [0; STACK_SIZE];
-        self.keys = [false; NUM_KEYS];
+        self.stack = [0; definitions::STACK_SIZE];
+        self.keypad = [false; definitions::NUM_KEYS];
         self.dt = 0;
         self.st = 0;
-        self.ram[..FONTSET_SIZE].copy_from_slice(&FONTSET);
+        self.ram[..font::FONTSET_SIZE].copy_from_slice(&font::FONTSET);
     }
 
     // CPU loop - runs every CYCLE
@@ -80,7 +85,7 @@ impl Cpu {
         let low_byte = self.ram[(self.pc + 1) as usize] as u16;
 
         // Combine both values as Big Endian - all RAM values are 8 bit
-        let op = (high_byte << 8) | lower_byte;
+        let op = (high_byte << 8) | low_byte;
         // Move to next instruction
         self.pc += 2;
         // Return OPCODE
@@ -102,13 +107,13 @@ impl Cpu {
 
             // CLS - 0x00E0 "Clear screen" (reset buffer)
             (0, 0, 0xE, 0) => {
-                self.screen = [false; DISP_COLS * DISP_ROWS];
+                self.display = [false; definitions::DISP_COLS * definitions::DISP_ROWS];
             },
 
             // RET - 0x00EE "Return from subroutine (function)" - move PC to specified address, then return to original addr.
             // Reads the address from the CPU stack and moves PC to it.
             (0, 0, 0xE, 0xE) => {
-                let ret_addr = self.pop();
+                let ret_addr: u16 = self.pop();
                 self.pc = ret_addr;
             },
 
@@ -196,7 +201,7 @@ impl Cpu {
             },
 
             // "_" stands for "everything else"
-            (_, _, _, _) => unimplemented!("ERR: Panic! Unimplemented opcode: {}", op),
+            (_, _, _, _) => no_instr(false, op),
 
         }
 
@@ -213,7 +218,7 @@ impl Cpu {
 
         if (self.st > 0) {
             if (self.st == 1) {
-                // TODO: BEEP
+                no_audio();
             } 
         }
         self.st -= 1;
@@ -221,3 +226,49 @@ impl Cpu {
     }
 
 }
+
+
+// WARNINGS
+pub fn underflow_panic(sp: u16) {
+    println!(
+        "{} {} Did not pop at {} due to SP = 0.", 
+        "WARN:".red(),
+        "W001:".yellow(),
+        sp
+    );
+}
+
+pub fn no_instr(no_panic: bool, op: u16) {
+    println!(
+        "{} {} Panic! Unimplemented opcode {}",
+        "ERR:".red(),
+        "E001".yellow(),
+        op
+    );
+    if !no_panic {
+        unimplemented!();
+    } 
+}
+
+pub fn no_audio() {
+    println!(
+        "{} {} Audio not implemented!",
+        "WARN:".red(),
+        "W002:".yellow()
+    )
+}
+
+fn warn_tests() {
+    println!("*** RUNNING WARNING TESTS ***");
+    underflow_panic(0);
+    no_audio();
+    no_instr(true, 0000);   
+}
+
+// MAIN
+fn main(){
+    println!("*** Welcome to Chip-Infinite! ***");
+    
+    warn_tests();
+}
+

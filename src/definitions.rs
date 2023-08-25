@@ -1,7 +1,7 @@
-const RAM: usize = 4096;
-const REGS: usize = 16;
-const STACK_SIZE: usize = 16;
-const NUM_KEYS: usize = 16;
+pub const RAM: usize = 4096;
+pub const REGS: usize = 16;
+pub const STACK_SIZE: usize = 16;
+pub const NUM_KEYS: usize = 16;
 
 // CHIP-8 programs load from 0x200 in memory onwards, as everything before was reserved for the interpreter.
 pub const START_ADDR: u16 = 0x200;
@@ -9,19 +9,19 @@ pub const START_ADDR: u16 = 0x200;
 pub const DISP_ROWS: usize = 32;
 pub const DISP_COLS: usize = 64;
 
-pub struct cpu {
+pub struct Cpu {
     
     // memory
-    pub mem: [u8; RAM],
+    pub ram: [u8; RAM],
 
     // RAM RW index register
-    pub i: u16,
+    pub i_reg: u16,
 
     // program counter register
     pub pc: u16,
 
     // V / general purpose registers [V0-VF]
-    pub v: [u8; REGS],
+    pub v_reg: [u8; REGS],
 
     // display
     pub display: [bool; DISP_COLS * DISP_ROWS],
