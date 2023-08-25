@@ -2,7 +2,8 @@
 > 🦀 A CHIP-8 emulator by crustaceans, for crustaceans. 
 
 > [!WARNING]
-> Not buildable or working yet!
+> Not working yet
+> Missing many instructions and frontend.
 
 This is a very experimental emulator, expect issues. 
 
